@@ -1,5 +1,6 @@
 from functools import partial
 import numpy as np
+import math
 
 def _obj_wrapper(func, args, kwargs, x):
     return func(x, *args, **kwargs)
@@ -124,7 +125,8 @@ def pso(func, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={},
     # Initialize the particle swarm ############################################
     S = swarmsize
     D = len(lb)  # the number of dimensions each particle has
-    x = np.random.rand(S, D)  # particle positions
+    #x = np.random.rand(S, D)  # particle positions
+    x = np.random.randint(2, size=(S,D))
     v = np.zeros_like(x)  # particle velocities
     p = np.zeros_like(x)  # best particle positions
     fx = np.zeros(S)  # current particle function values
@@ -134,7 +136,7 @@ def pso(func, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={},
     fg = np.inf  # best swarm position starting value
     
     # Initialize the particle's position
-    x = lb + x*(ub - lb)
+    #x = lb + x*(ub - lb)
 
     # Calculate objective and constraints for each particle
     if processes > 1:
@@ -172,11 +174,21 @@ def pso(func, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={},
         # Update the particles velocities
         v = omega*v + phip*rp*(p - x) + phig*rg*(g - x)
         # Update the particles' positions
-        x = x + v
+
+        tmp = []
+        for i,e in enumerate(v):
+            for j,f in enumerate(e):
+                const3 = np.random.random_sample()
+                if const3 < (1 / (1 + math.exp(-f))):
+                    x[i][j] = 1
+                else:
+                    x[i][j] = 0
+        #x = x + v
+        
         # Correct for bound violations
-        maskl = x < lb
-        masku = x > ub
-        x = x*(~np.logical_or(maskl, masku)) + lb*maskl + ub*masku
+        #maskl = x < lb
+        #masku = x > ub
+        #x = x*(~np.logical_or(maskl, masku)) + lb*maskl + ub*masku
 
         # Update objectives and constraints
         if processes > 1:

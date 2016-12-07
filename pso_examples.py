@@ -77,7 +77,7 @@ P = 66  # lb (force)
 args = (B, rho, E, P)
 lb = [10, 1, 0.01]
 ub = [30, 3, 0.25]
-xopt4, fopt4 = pso(weight, lb, ub, f_ieqcons=mycons, args=args)
+xopt4, fopt4 = pso(weight, lb, ub, f_ieqcons=mycons, args=args, processes=10)
 
 print('The optimum is at:')
 print('    {}'.format(xopt4))
