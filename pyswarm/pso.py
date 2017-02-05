@@ -20,7 +20,7 @@ def _cons_f_ieqcons_wrapper(f_ieqcons, args, kwargs, x):
 def pso(func, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={}, 
         swarmsize=100, omega=0.5, phip=0.5, phig=0.5, maxiter=100, 
         minstep=1e-8, minfunc=1e-8, debug=False, processes=1,
-        particle_output=False):
+        particle_output=False, prog='cont'):
     """
     Perform a particle swarm optimization (PSO)
    
@@ -75,6 +75,9 @@ def pso(func, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={},
     particle_output : boolean
         Whether to include the best per-particle position and the objective
         values at those.
+    prog: str
+        Type of pso program. The options are binary pso (bin) and continuous 
+        pso (cont).
    
     Returns
     =======
@@ -125,8 +128,13 @@ def pso(func, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={},
     # Initialize the particle swarm ############################################
     S = swarmsize
     D = len(lb)  # the number of dimensions each particle has
-    #x = np.random.rand(S, D)  # particle positions
-    x = np.random.randint(2, size=(S,D))
+
+    x = None
+    if prog == 'cont':
+        x = np.random.rand(S, D)  # particle positions
+    else:
+        x = np.random.randint(2, size=(S,D))
+
     v = np.zeros_like(x)  # particle velocities
     p = np.zeros_like(x)  # best particle positions
     fx = np.zeros(S)  # current particle function values
@@ -135,8 +143,9 @@ def pso(func, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={},
     g = []  # best swarm position
     fg = np.inf  # best swarm position starting value
     
-    # Initialize the particle's position
-    #x = lb + x*(ub - lb)
+    if prog == 'cont':
+        # Initialize the particle's position
+        x = lb + x*(ub - lb)
 
     # Calculate objective and constraints for each particle
     if processes > 1:
@@ -175,20 +184,22 @@ def pso(func, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={},
         v = omega*v + phip*rp*(p - x) + phig*rg*(g - x)
         # Update the particles' positions
 
-        tmp = []
-        for i,e in enumerate(v):
-            for j,f in enumerate(e):
-                const3 = np.random.random_sample()
-                if const3 < (1 / (1 + math.exp(-f))):
-                    x[i][j] = 1
-                else:
-                    x[i][j] = 0
-        #x = x + v
+        if prog == 'bin':
+            tmp = []
+            for i,e in enumerate(v):
+                for j,f in enumerate(e):
+                    const3 = np.random.random_sample()
+                    if const3 < (1 / (1 + math.exp(-f))):
+                        x[i][j] = 1
+                    else:
+                        x[i][j] = 0
+        else:
+            x = x + v
         
-        # Correct for bound violations
-        #maskl = x < lb
-        #masku = x > ub
-        #x = x*(~np.logical_or(maskl, masku)) + lb*maskl + ub*masku
+            # Correct for bound violations
+            maskl = x < lb
+            masku = x > ub
+            x = x*(~np.logical_or(maskl, masku)) + lb*maskl + ub*masku
 
         # Update objectives and constraints
         if processes > 1:
